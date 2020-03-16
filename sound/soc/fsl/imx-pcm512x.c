@@ -121,8 +121,32 @@ static int imx_pcm512x_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+static const u32 supported_rates[] = {
+	8000, 11025, 12000, 16000, 22050,
+	24000, 32000, 44100, 48000, 64000,
+	88200, 96000, 176400, 192000, 384000,
+};
+
+static int imx_pcm512x_startup(struct snd_pcm_substream *substream)
+{
+	static struct snd_pcm_hw_constraint_list constraint_rates;
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	int ret;
+
+	constraint_rates.list = supported_rates;
+	constraint_rates.count = ARRAY_SIZE(supported_rates);
+
+	ret = snd_pcm_hw_constraint_list(runtime, 0,
+			SNDRV_PCM_HW_PARAM_RATE, &constraint_rates);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
 static const struct snd_soc_ops imx_pcm512x_ops = {
 	.hw_params = imx_pcm512x_hw_params,
+	.startup = imx_pcm512x_startup,
 };
 
 static int imx_pcm512x_probe(struct platform_device *pdev)
