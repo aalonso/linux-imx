@@ -19,6 +19,7 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
+#include "fsl_sai.h"
 
 struct imx_pcm512x_data {
 	struct snd_soc_dai_link dai;
@@ -27,6 +28,18 @@ struct imx_pcm512x_data {
 	bool digital_gain_limit;
 	bool gpio_unmute;
 	bool auto_mute;
+};
+
+static const struct imx_pcm512x_fs_mul {
+	unsigned int min;
+	unsigned int max;
+	unsigned int mul;
+} fs_mul[] = {
+	{ .min = 8000,   .max = 32000,  .mul = 256 },
+	{ .min = 44100,  .max = 48000,  .mul = 256 },
+	{ .min = 64000,  .max = 96000,  .mul = 256 },
+	{ .min = 176400, .max = 192000, .mul = 128 },
+	{ .min = 352800, .max = 384000, .mul = 64  },
 };
 
 static const struct snd_soc_dapm_widget imx_pcm512x_dapm_widgets[] = {
@@ -83,6 +96,19 @@ static int imx_pcm512x_set_bias_level(struct snd_soc_card *card,
 	return 0;
 }
 
+static unsigned long imx_pcm512x_compute_freq(struct snd_pcm_hw_params *params)
+{
+	unsigned int rate = params_rate(params);
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(fs_mul); i++) {
+		if (rate >= fs_mul[i].min && rate <= fs_mul[i].max)
+			return rate * fs_mul[i].mul;
+	}
+
+	return 0;
+}
+
 static int imx_pcm512x_hw_params(struct snd_pcm_substream *substream,
 		struct snd_pcm_hw_params *params)
 {
@@ -91,6 +117,7 @@ static int imx_pcm512x_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 	struct snd_soc_card *card = rtd->card;
 	struct imx_pcm512x_data *data = snd_soc_card_get_drvdata(card);
+	unsigned long freq = imx_pcm512x_compute_freq(params);
 	unsigned int channels = params_channels(params);
 	unsigned int fmt;
 	int ret;
@@ -115,6 +142,13 @@ static int imx_pcm512x_hw_params(struct snd_pcm_substream *substream,
 			BIT(channels) - 1, 2, params_physical_width(params));
 	if (ret) {
 		dev_err(card->dev, "fail to set cpu dai tdm slot\n");
+		return ret;
+	}
+
+	ret = snd_soc_dai_set_sysclk(cpu_dai, FSL_SAI_CLK_MAST1, freq,
+				SND_SOC_CLOCK_OUT);
+	if (ret) {
+		dev_err(card->dev, "fail to set cpu dai mclk1(%lu)\n", freq);
 		return ret;
 	}
 
