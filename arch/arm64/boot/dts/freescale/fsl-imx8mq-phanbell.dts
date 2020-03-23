@@ -91,7 +91,10 @@
 		audio-routing =
 			"Line Out Jack", "OUTL",
 			"Line Out Jack", "OUTR";
+		mute-gpios = <&gpio1 14 0>;
 		pidac,24db_digital_gain;
+		pidac,auto_mute_amp;
+		pidac,unmute_amp;
 	};
 
 	busfreq {
@@ -157,7 +160,7 @@
 &pwm3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm3>;
-	status = "okay";
+	status = "disabled";
 };
 
 &ecspi1 {
@@ -204,6 +207,7 @@
 				MX8MQ_IOMUXC_ECSPI2_SCLK_GPIO5_IO10		0x19
 				MX8MQ_IOMUXC_ECSPI2_MISO_GPIO5_IO12		0x19
 				MX8MQ_IOMUXC_ECSPI2_SS0_GPIO5_IO13		0x19
+				MX8MQ_IOMUXC_GPIO1_IO14_GPIO1_IO14		0x19
 			>;
 		};
 
