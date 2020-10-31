@@ -66,12 +66,12 @@
 	dummy_dai: dummy-dai {
 		compatible = "linux,snd-soc-dummy";
 		#sound-dai-cells = <0>;
-		status = "okay";
+		status = "disabled";
 	};
 
 	sound-header {
 		compatible = "simple-audio-card";
-		status = "okay";
+		status = "disabled";
 		simple-audio-card,name = "40-pin Header";
 		simple-audio-card,format = "i2s";
 		simple-audio-card,cpu {
